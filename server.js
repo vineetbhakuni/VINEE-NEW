@@ -91,6 +91,11 @@ const roomCodeSchema = new mongoose.Schema(
 );
 
 const RoomCode = mongoose.model('RoomCode', roomCodeSchema);
+const roomChatMap = {};
+
+function getInMemoryRoomChatHistory(roomId) {
+    return roomChatMap[roomId] || [];
+}
 
 async function connectToMongo() {
     const mongoUri = process.env.MONGO_URI;
@@ -109,7 +114,7 @@ async function connectToMongo() {
 
 async function getRoomChatHistory(roomId) {
     if (mongoose.connection.readyState !== 1) {
-        return [];
+        return getInMemoryRoomChatHistory(roomId);
     }
 
     return ChatMessage.find({ roomId })
@@ -119,13 +124,19 @@ async function getRoomChatHistory(roomId) {
 }
 
 async function persistMessage(roomId, username, message) {
+    const fallbackMessage = {
+        roomId,
+        username,
+        message,
+        createdAt: new Date(),
+    };
+
+    roomChatMap[roomId] = [...getInMemoryRoomChatHistory(roomId), fallbackMessage].slice(
+        -200
+    );
+
     if (mongoose.connection.readyState !== 1) {
-        return {
-            roomId,
-            username,
-            message,
-            createdAt: new Date(),
-        };
+        return fallbackMessage;
     }
 
     const saved = await ChatMessage.create({ roomId, username, message });
@@ -230,7 +241,7 @@ io.on('connection', (socket) => {
 
         try {
             const history = await getRoomChatHistory(roomId);
-            io.to(socket.id).emit(ACTIONS.CHAT_HISTORY, history);
+            io.to(socket.id).emit(ACTIONS.CHAT_HISTORY, history || []);
         } catch (error) {
             console.error('Failed to load chat history:', error.message);
         }
