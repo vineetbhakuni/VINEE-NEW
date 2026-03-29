@@ -7,10 +7,36 @@ const mongoose = require('mongoose');
 const ACTIONS = require('./src/Actions');
 
 const server = http.createServer(app);
-const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
+const configuredFrontendUrl = process.env.FRONTEND_URL;
+const renderExternalUrl = process.env.RENDER_EXTERNAL_URL;
+const defaultDevOrigin = 'http://localhost:3000';
+
+const allowedOrigins = [configuredFrontendUrl, renderExternalUrl, defaultDevOrigin].filter(
+    Boolean
+);
+
+function isAllowedOrigin(origin) {
+    if (!origin) {
+        return true;
+    }
+    return allowedOrigins.includes(origin);
+}
+
+function resolveAllowedOriginHeader(origin) {
+    if (origin && isAllowedOrigin(origin)) {
+        return origin;
+    }
+    return allowedOrigins[0] || '*';
+}
+
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigin,
+        origin: (origin, callback) => {
+            if (isAllowedOrigin(origin)) {
+                return callback(null, true);
+            }
+            return callback(new Error('Not allowed by CORS'));
+        },
         methods: ['GET', 'POST'],
     },
 });
@@ -137,7 +163,9 @@ async function persistRoomCode(roomId, code) {
 app.use(express.static('build'));
 app.use(express.json());
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', allowedOrigin);
+    const origin = req.headers.origin;
+    res.header('Access-Control-Allow-Origin', resolveAllowedOriginHeader(origin));
+    res.header('Vary', 'Origin');
     res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') {

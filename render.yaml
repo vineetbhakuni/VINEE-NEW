@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: realtime-code-editor
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+        # Optional: override allowed frontend origin. If omitted,
+        # server falls back to RENDER_EXTERNAL_URL automatically.
