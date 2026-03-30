@@ -392,7 +392,7 @@
         min-height: 58dvh;
     }
 
-    .CodeMirror {
+    .editorContainer {
         height: 58dvh;
         min-height: 58dvh;
     }
@@ -420,18 +420,15 @@
         min-height: 240px;
     }
 
-    .CodeMirror {
+    .editorContainer {
         height: 50dvh;
         min-height: 50dvh;
     }
 }
 
-.CodeMirror {
+.editorContainer {
     height: 100dvh;
     min-height: 100dvh;
-    font-size: 20px;
-    line-height: 1.6;
-    padding-top: 0;
 }
 
 @supports not (height: 100dvh) {
@@ -439,7 +436,7 @@
     .chatWrap,
     .editorWrap,
     .editorLoading,
-    .CodeMirror {
+    .editorContainer {
         min-height: 100vh;
         height: 100vh;
     }
